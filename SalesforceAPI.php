@@ -38,6 +38,7 @@ class SalesforceAPI extends APIAbstract {
         RETURN_ARRAY_A = 'array_a';
 
     const
+        LOGIN_URI    = 'https://login.salesforce.com',
         LOGIN_PATH   = '/services/oauth2/token',
         OBJECT_PATH = 'sobjects/',
         GRANT_TYPE  = 'password';
@@ -52,8 +53,9 @@ class SalesforceAPI extends APIAbstract {
      * @param string $client_id The Consumer Key from Salesforce
      * @param string $client_secret The Consumer Secret from Salesforce
      */
-    public function __construct($instance_url,$version, $client_id, $client_secret, $return_type = self::RETURN_OBJECT)
-    {
+    public function __construct($instance_url, $version, $client_id, $client_secret, $return_type = self::RETURN_OBJECT)
+    {  
+        $instance_url = self::LOGIN_URI;
         // Instantiate base variables
         $this->instance_url = $instance_url;
         $this->api_version = $version;
@@ -63,6 +65,7 @@ class SalesforceAPI extends APIAbstract {
 
         $this->base_url = $instance_url;
         $this->instance_url = $instance_url . '/services/data/v' . $version . '/';
+        $this->version = $version;
 
         $this->headers = [
             'Content-Type' => 'application/json'
@@ -82,6 +85,11 @@ class SalesforceAPI extends APIAbstract {
             ];
             curl_setopt_array($this->handle, $options);
         }
+    }
+
+    protected function getInstanceUrl() {
+        $token_url = self::LOGIN_URI . "/services/oauth2/token";
+        
     }
 
     /*========== Authorization =========*/
@@ -126,18 +134,12 @@ class SalesforceAPI extends APIAbstract {
         $login = curl_exec($ch);
         $login = explode("\n", $login);
         $login = json_decode($login[count($login)-1]);
-        //echo 'Auth response: '; print_r($data); echo '<br/>';
+
         curl_close($ch);
-        // Send the request
-//        $login = $this->httpRequest($this->base_url . self::LOGIN_PATH,$login_data, $headers, self::METH_POST);
+        var_dump($login);
 
-        // Set the access token
-//        if($this->return_type === self::RETURN_OBJECT) {
         $this->access_token = $login->access_token;
-//        } elseif($this->return_type === self::RETURN_ARRAY_A) {
-//            $this->access_token = $login['access_token'];
-//        }
-
+        $this->instance_url = $login->instance_url;
 
         // Return the login object
         // TODO: Should this be returned?
@@ -153,7 +155,7 @@ class SalesforceAPI extends APIAbstract {
      */
     public function getAPIVersions()
     {
-        return $this->httpRequest( $this->base_url . '/services/data' );
+        return $this->httpRequest( $this->instance_url.'/services/data' );
     }
 
     /**
@@ -347,7 +349,7 @@ class SalesforceAPI extends APIAbstract {
         // Merge all the headers
         $request_headers = array_merge($request_headers, $headers);
 
-        return $this->httpRequest($this->instance_url . $path, $params, $request_headers, $method);
+        return $this->httpRequest($this->instance_url. '/services/data/v' . $this->version . '/'. $path, $params, $request_headers, $method);
     }
 
     /**
@@ -398,7 +400,6 @@ class SalesforceAPI extends APIAbstract {
                 curl_setopt($this->handle, CURLOPT_CUSTOMREQUEST, $method);
                 break;
         }
-
 
         curl_setopt($this->handle, CURLOPT_URL, $url);
         curl_setopt($this->handle, CURLOPT_HTTPHEADER, $this->createCurlHeaderArray($request_headers));

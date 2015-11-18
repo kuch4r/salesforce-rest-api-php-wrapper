@@ -2,7 +2,7 @@
 
 require_once 'SalesforceAPI.php';
 
-$salesforce = new SalesforceAPI('https://na17.salesforce.com','32.0','<Consumer Key>', '<Consumer Secret>');
+$salesforce = new SalesforceAPI('https://na17.salesforce.com','35.0','<Consumer Key>', '<Consumer Secret>');
 
 $salesforce->login('<Salesforce Login>','<Salesforce Password>','<Salesforce Security Token>');
 
